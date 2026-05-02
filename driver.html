@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<link rel="manifest" href="manifest.json">
+
+<title>Driver</title>
+<style>
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:sans-serif;
+  display:flex;
+  flex-direction:row;
+  height:100vh;
+  overflow:hidden;
+}
+
+#buttons {
+  width:80%;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap:10px;
+  padding:10px;
+}
+
+button {
+  font-size:2.5rem;
+  border:none;
+  border-radius:10px;
+  background:#444;
+  color:white;
+  cursor:pointer;
+}
+
+#travaso {
+  width:20%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+#travaso button .vtext {
+  writing-mode:vertical-rl;
+  text-orientation:upright;
+  font-size:2.2rem;
+  background:#444;
+  color:white;
+  height:380px;
+  width:100px;
+  border-radius:15px;
+  cursor:pointer;
+  display: flex;              /* 🔥 centra orizzontalmente */
+  justify-content: center;    /* 🔥 centra orizzontalmente */
+  align-items: center;        /* 🔥 centra verticalmente */
+}
+
+#overlay {
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:4rem;
+  background:black;
+  color:white;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.3s;
+}
+
+#debug {
+  position:fixed;
+  bottom:0; left:0; right:0;
+  background:#000;
+  color:#0f0;
+  padding:10px;
+  font-size:1rem;
+  max-height:120px;
+  overflow:auto;
+}
+</style>
+</head>
+<body>
+
+<!-- AUDIO -->
+<audio id="sndSafety" src="safety car.mp3"></audio>
+<audio id="sndPilota" src="cambio pilota.mp3"></audio>
+<audio id="sndBenzina" src="benzina.mp3"></audio>
+<audio id="sndPenalita" src="penalita.mp3"></audio>
+<audio id="sndContinua" src="continua.mp3"></audio>
+<audio id="sndPush" src="push.mp3"></audio>
+<audio id="sndSlow" src="rallenta.mp3"></audio>
+<audio id="sndGuasto" src="guasto.mp3"></audio>
+<audio id="sndStart" src="travaso_start.mp3"></audio>
+<audio id="sndStop" src="travaso_stop.mp3"></audio>
+<audio id="sndClick" src="click.mp3"></audio>
+
+<div id="buttons">
+  <button onclick="play('sndClick'); send('benzina')">BENZINA</button>
+  <button onclick="play('sndClick'); send('box')">BOX</button>
+  <button onclick="play('sndClick'); send('pilota')">PILOTA</button>
+  <button onclick="play('sndClick'); send('ripeti')">RIPETI</button>
+</div>
+
+<div id="travaso">
+  <!-- 🔥 UNICA MODIFICA: aggiunto il testo TRAVASO -->
+  <button onclick="play('sndClick'); startTravaso()">
+  <span class="vtext">TRAVASO</span>
+</button>
+
+</div>
+
+<div id="overlay"></div>
+<div id="debug"></div>
+
+<script src="client.js"></script>
+
+<script>
+let travasoTimer = null;
+
+function play(id) {
+  const s = document.getElementById(id);
+  if (s) s.play().catch(()=>{});
+}
+
+function startTravaso() {
+  send("travaso_start");
+  showOverlay("travaso_start");
+  start10minTimer();
+}
+
+function start10minTimer() {
+  if (travasoTimer) clearTimeout(travasoTimer);
+  travasoTimer = setTimeout(() => {
+    showOverlay("travaso_stop");
+    send("travaso_stop");
+  }, 10 * 60 * 1000);
+}
+
+function stopTravaso() {
+  if (travasoTimer) clearTimeout(travasoTimer);
+  showOverlay("travaso_stop");
+}
+
+const eventSource = new EventSource("https://ntfy.sh/pitwall-fox-flatsix/sse");
+
+eventSource.onmessage = (e) => {
+  const full = JSON.parse(e.data);
+  const msg = JSON.parse(full.message);
+
+ // document.getElementById("debug").innerText = full.message; (debuggggggggggggggggggg)
+
+  if (!msg.type) return;
+
+  // IGNORA i messaggi del driver (tranne TRAVASO)
+  if (msg.from === "driver" &&
+      msg.type !== "travaso_start" &&
+      msg.type !== "travaso_stop") {
+    return;
+  }
+
+  showOverlay(msg.type);
+};
+
+function showOverlay(type) {
+  const o = document.getElementById("overlay");
+
+  let bg = "black";
+  let fg = "white";
+  let text = type.toUpperCase();
+
+  switch (type.toLowerCase()) {
+
+    case "safetycar":
+      play("sndSafety");
+      fg = "yellow"; bg = "black"; text = "SAFETY CAR";
+      break;
+
+    case "pilota":
+      play("sndPilota");
+      fg = "white"; bg = "black"; text = "PILOTA";
+      break;
+
+    case "benzina":
+      play("sndBenzina");
+      fg = "white"; bg = "black"; text = "BENZINA";
+      break;
+
+    case "penalita":
+      play("sndPenalita");
+      fg = "red"; bg = "black"; text = "PENALITÀ";
+      break;
+
+    case "continua":
+      play("sndContinua");
+      fg = "white"; bg = "black"; text = "CONTINUA";
+      break;
+
+    case "push":
+      play("sndPush");
+      fg = "white"; bg = "black"; text = "PUSH";
+      break;
+
+    case "slow":
+      play("sndSlow");
+      fg = "white"; bg = "black"; text = "SLOW";
+      break;
+
+    case "guasto":
+      play("sndGuasto");
+      fg = "white"; bg = "black"; text = "GUASTO";
+      break;
+
+    case "travaso_start":
+      play("sndStart");
+      fg = "black"; bg = "limegreen"; text = "INIZIO TRAVASO";
+      break;
+
+    case "travaso_stop":
+      play("sndStop");
+      fg = "black"; bg = "orange"; text = "CHIUDI TRAVASO";
+      break;
+  }
+
+  o.style.background = bg;
+  o.style.color = fg;
+  o.innerText = text;
+
+  o.style.opacity = 1;
+  setTimeout(() => o.style.opacity = 0, 6000);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BOX</title>
+<style>
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:sans-serif;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+button {
+  width:30%;
+  height:18vh;
+  margin:1%;
+  font-size:1.8rem;
+  background:#444;
+  color:white;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<button onclick="sendMessage('safetycar')">SAFETY CAR</button>
+<button onclick="sendMessage('pilota')">PILOTA</button>
+<button onclick="sendMessage('benzina')">BENZINA</button>
+<button onclick="sendMessage('penalita')">PENALITÀ</button>
+
+<button onclick="sendMessage('continua')">CONTINUA</button>
+<button onclick="sendMessage('push')">PUSH</button>
+<button onclick="sendMessage('slow')">SLOW</button>
+<button onclick="sendMessage('guasto')">GUASTO</button>
+
+<button onclick="sendMessage('travaso_start')">INIZIO TRAVASO</button>
+<button onclick="sendMessage('travaso_stop')">FINE TRAVASO</button>
+
+<script src="client.js"></script>
+</body>
+</html>
